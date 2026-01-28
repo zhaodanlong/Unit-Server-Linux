@@ -1,0 +1,13 @@
+# 输出目录
+output/
+
+# 临时文件
+*.tmp
+*.log
+*.swp
+*~
+
+# 大型二进制文件（可选保留）
+# kernel/zImage
+# kernel/sun8i-h3-unit.dtb
+# bootloader/*.bin

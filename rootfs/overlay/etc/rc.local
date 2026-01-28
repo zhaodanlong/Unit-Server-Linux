@@ -1,0 +1,33 @@
+#!/bin/sh -e
+#
+# rc.local - 启动时加载驱动
+#
+
+# ============================================
+# 1. 加载 SPI LCD 驱动 (ST7789VW 240x135)
+# ============================================
+# - name=fb_st7789vw: LCD 控制器驱动
+# - busnum=0: SPI0 总线
+# - mode=3: SPI 模式 3
+# - speed=50000000: 50MHz SPI 时钟
+# - gpios=dc:12,reset:11: GPIO 配置 (PA12, PA11)
+modprobe fbtft_device custom name=fb_st7789vw busnum=0 mode=3 speed=50000000 gpios=dc:12,reset:11
+
+# ============================================
+# 2. 加载 WiFi 驱动 (RTL8723BU)
+# ============================================
+# 驱动位于非标准路径，使用 insmod 直接加载
+insmod /lib/modules/4.14.111/kernel/drivers/net/wireless/realtek/rtl8723bu/8723bu.ko 2>/dev/null || true
+
+# 等待 WiFi 接口出现
+sleep 2
+
+# 启动 WiFi 接口 (接口名可能是 wlan0 或 wlx...)
+for iface in /sys/class/net/wl*; do
+    if [ -e "$iface" ]; then
+        ifname=$(basename "$iface")
+        ip link set "$ifname" up 2>/dev/null || true
+    fi
+done
+
+exit 0
