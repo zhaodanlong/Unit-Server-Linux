@@ -148,37 +148,40 @@ Unit-Server 是基于 Quark 核心板（Allwinner H3）的超迷你 Linux 卡片
 | 参数 | 值 |
 |------|-----|
 | 类型 | 驻极体麦克风 |
-| 接口 | 模拟音频 (MICN/MICP) |
+| 接口 | H3 内置 Audio Codec |
 
 **引脚连接：**
 
-| MIC | H3 |
-|-----|-----|
-| MICP | MICP (音频正) |
-| MICN | MICN (音频负) |
+| MIC | H3 Audio Codec |
+|-----|----------------|
+| MIC+ | MICIN1P |
+| MIC- | MICIN1N |
 
-**状态：❓ 需确认（H3 Audio Codec 已加载）**
+**说明：** 连接到 H3 内置音频 Codec 的麦克风输入通道 1，为差分输入。
+
+**状态：⚠️ 硬件就绪，需 ALSA 配置**
 
 ### 8. KEY - 用户按键
 
-| 按键 | GPIO | 说明 |
-|------|------|------|
-| KEY1 | GPIO (需确认) | 用户按键 1 |
-| KEY2 | GPIO (需确认) | 用户按键 2 |
+| 按键 | H3 引脚 | GPIO 编号 | 说明 |
+|------|---------|-----------|------|
+| KEY1 | PA19 | GPIO 19 | 用户按键 1 |
+| KEY2 | PA18 | GPIO 18 | 用户按键 2 |
 
-**原理图显示：** KEY1 和 KEY2 连接到 VDD_3V3，按下接地。
+**电路设计：** KEY1 和 KEY2 连接到 VDD_3V3，按下接地（低电平有效）。
 
 **状态：❌ 未使用**
 
 ### 9. LED - 指示灯
 
-| LED | 信号 | 说明 |
-|-----|------|------|
-| D1 | STATUS_LED | 状态指示灯 |
-| D2 | USR_LED (PWR_STAT) | 用户/电源指示灯 |
-| D3 | - | 其他指示灯 |
+| LED | H3 引脚 | GPIO 编号 | 说明 |
+|-----|---------|-----------|------|
+| STATUS_LED (D1) | PA10 | GPIO 10 | 状态指示灯 |
+| USR_LED (D2) | PG11 | GPIO 203 | 用户指示灯 |
 
-**状态：❌ 未使用（PWR_STAT 可能硬件控制）**
+**电路设计：** LED 高电平点亮 (GPIO_ACTIVE_HIGH)
+
+**状态：❌ 未使用**
 
 ---
 
@@ -224,9 +227,25 @@ apt install bluetooth bluez
 hciconfig -a
 ```
 
-### 启用按键 (gpio-keys)
+### 启用按键
 
-需要在设备树中添加：
+**方法 1: 通过 sysfs 读取**
+
+```bash
+# 导出 GPIO
+echo 19 > /sys/class/gpio/export  # KEY1
+echo 18 > /sys/class/gpio/export  # KEY2
+
+# 设置为输入
+echo in > /sys/class/gpio/gpio19/direction
+echo in > /sys/class/gpio/gpio18/direction
+
+# 读取按键状态 (0=按下, 1=释放)
+cat /sys/class/gpio/gpio19/value  # KEY1
+cat /sys/class/gpio/gpio18/value  # KEY2
+```
+
+**方法 2: 设备树 gpio-keys (推荐)**
 
 ```dts
 gpio-keys {
@@ -235,13 +254,13 @@ gpio-keys {
     key1 {
         label = "KEY1";
         linux,code = <KEY_F1>;
-        gpios = <&pio X XX GPIO_ACTIVE_LOW>;
+        gpios = <&pio 0 19 GPIO_ACTIVE_LOW>;  /* PA19 */
     };
     
     key2 {
         label = "KEY2";
         linux,code = <KEY_F2>;
-        gpios = <&pio X XX GPIO_ACTIVE_LOW>;
+        gpios = <&pio 0 18 GPIO_ACTIVE_LOW>;  /* PA18 */
     };
 };
 ```
@@ -249,40 +268,73 @@ gpio-keys {
 ### 启用 LED
 
 ```bash
-# 通过 sysfs 控制 GPIO
-echo XX > /sys/class/gpio/export
-echo out > /sys/class/gpio/gpioXX/direction
-echo 1 > /sys/class/gpio/gpioXX/value  # 点亮
-echo 0 > /sys/class/gpio/gpioXX/value  # 熄灭
+# STATUS_LED (PA10 = GPIO 10)
+echo 10 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio10/direction
+echo 1 > /sys/class/gpio/gpio10/value   # 点亮
+echo 0 > /sys/class/gpio/gpio10/value   # 熄灭
+
+# USR_LED (PG11 = GPIO 203)
+echo 203 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio203/direction
+echo 1 > /sys/class/gpio/gpio203/value  # 点亮
+echo 0 > /sys/class/gpio/gpio203/value  # 熄灭
+```
+
+**LED 闪烁脚本：**
+
+```bash
+#!/bin/bash
+# 心跳闪烁 STATUS_LED
+while true; do
+    echo 1 > /sys/class/gpio/gpio10/value
+    sleep 0.5
+    echo 0 > /sys/class/gpio/gpio10/value
+    sleep 0.5
+done
 ```
 
 ### 测试麦克风
 
 ```bash
-# 录音测试
-arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 test.wav
+# 查看音频设备
+arecord -l
+
+# 录音测试 (H3 Codec 通常是 card 2)
+arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 -d 5 test.wav
 
 # 播放测试
 aplay test.wav
+
+# 调整麦克风音量
+alsamixer -c 2
 ```
 
 ---
 
 ## 📐 GPIO 引脚映射
 
-> 注：具体 GPIO 编号需要根据原理图确认
+| 功能 | H3 引脚 | GPIO 编号 | 方向 | 电平 |
+|------|---------|-----------|------|------|
+| LCD DC | PA12 | 12 | OUT | - |
+| LCD RES | PA11 | 11 | OUT | - |
+| KEY1 | PA19 | 19 | IN | 低有效 |
+| KEY2 | PA18 | 18 | IN | 低有效 |
+| STATUS_LED | PA10 | 10 | OUT | 高有效 |
+| USR_LED | PG11 | 203 | OUT | 高有效 |
 
-| 功能 | GPIO | 计算方法 |
-|------|------|----------|
-| LCD DC | GPIO12 | PA12 = 0*32 + 12 = 12 |
-| LCD RES | GPIO11 | PA11 = 0*32 + 11 = 11 |
-| KEY1 | TBD | 待确认 |
-| KEY2 | TBD | 待确认 |
-| STATUS_LED | TBD | 待确认 |
-| USR_LED | TBD | 待确认 |
+**GPIO 编号计算：** `GPIO = 端口号 × 32 + 引脚号`
 
-**GPIO 编号计算：** `GPIO = 端口号 * 32 + 引脚号`
-- PA = 0, PB = 1, PC = 2, PD = 3, PE = 4, PF = 5, PG = 6
+| 端口 | 编号 | 范围 |
+|------|------|------|
+| PA | 0 | GPIO 0-31 |
+| PB | 1 | GPIO 32-63 |
+| PC | 2 | GPIO 64-95 |
+| PD | 3 | GPIO 96-127 |
+| PE | 4 | GPIO 128-159 |
+| PF | 5 | GPIO 160-191 |
+| PG | 6 | GPIO 192-223 |
+| PL | 0 (r_pio) | 特殊 |
 
 ---
 
