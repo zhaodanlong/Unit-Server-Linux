@@ -1,0 +1,175 @@
+/*
+ * Device Tree for Unit-Server (Allwinner H3)
+ *
+ * 硬件配置:
+ * - CPU: Allwinner H3 @ 1.2GHz
+ * - RAM: 512MB DDR3
+ * - LCD: ST7789VW 240x135 SPI (SPI0)
+ * - WiFi/BT: RTL8723BU (USB)
+ * - Storage: TF Card (MMC0)
+ * - UART: UART0 -> CP2102 (调试串口)
+ * - Audio: H3 内置 Codec (MIC)
+ * - GPIO: KEY1(PA19), KEY2(PA18), STATUS_LED(PA10), USR_LED(PG11)
+ */
+
+/dts-v1/;
+#include "sun8i-h3.dtsi"
+#include "sunxi-common-regulators.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+/ {
+	model = "Unit-Server";
+	compatible = "unit,unit-server", "allwinner,sun8i-h3";
+
+	aliases {
+		serial0 = &uart0;
+		spi0 = &spi0;
+		mmc0 = &mmc0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	/* LED 配置 */
+	leds {
+		compatible = "gpio-leds";
+
+		status_led {
+			label = "status";
+			gpios = <&pio 0 10 GPIO_ACTIVE_HIGH>; /* PA10 */
+			linux,default-trigger = "heartbeat";
+		};
+
+		usr_led {
+			label = "usr";
+			gpios = <&pio 6 11 GPIO_ACTIVE_HIGH>; /* PG11 */
+			default-state = "off";
+		};
+	};
+
+	/* 按键配置 */
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		key1 {
+			label = "KEY1";
+			linux,code = <KEY_PROG1>;
+			gpios = <&pio 0 19 GPIO_ACTIVE_LOW>; /* PA19 */
+		};
+
+		key2 {
+			label = "KEY2";
+			linux,code = <KEY_PROG2>;
+			gpios = <&pio 0 18 GPIO_ACTIVE_LOW>; /* PA18 */
+		};
+	};
+};
+
+/* UART0 - CP2102 调试串口 */
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pins_a>;
+	status = "okay";
+};
+
+/* SPI0 - LCD ST7789VW */
+&spi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi0_pins>;
+
+	/* ST7789VW 240x135 LCD */
+	lcd@0 {
+		compatible = "sitronix,st7789v";
+		reg = <0>;
+		status = "okay";
+
+		spi-max-frequency = <50000000>; /* 50MHz */
+		rotate = <270>;
+		width = <135>;
+		height = <240>;
+		fps = <30>;
+		buswidth = <8>;
+		dc-gpios = <&pio 0 12 GPIO_ACTIVE_HIGH>;    /* PA12 - DC */
+		reset-gpios = <&pio 0 11 GPIO_ACTIVE_HIGH>; /* PA11 - Reset */
+		debug = <0>;
+	};
+};
+
+/* MMC0 - TF Card (SD Card) */
+&mmc0 {
+	vmmc-supply = <&reg_vcc3v3>;
+	bus-width = <4>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc0_pins_a>;
+	status = "okay";
+};
+
+/* USB - WiFi RTL8723BU */
+&ehci0 {
+	status = "okay";
+};
+
+&ohci0 {
+	status = "okay";
+};
+
+&ehci1 {
+	status = "okay";
+};
+
+&ohci1 {
+	status = "okay";
+};
+
+/* USB OTG - Type-C */
+&usb_otg {
+	dr_mode = "otg";
+	status = "okay";
+};
+
+&usbphy {
+	status = "okay";
+};
+
+/* Audio Codec - MIC */
+&codec {
+	allwinner,audio-routing =
+		"Line Out", "LINEOUT",
+		"MIC1", "Mic",
+		"Mic", "MBIAS";
+	status = "okay";
+};
+
+/* 禁用不使用的 I2C 和 UART */
+&i2c0 {
+	status = "disabled";
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+&uart1 {
+	status = "disabled";
+};
+
+&uart2 {
+	status = "disabled";
+};
+
+&uart3 {
+	status = "disabled";
+};
+
+&ir {
+	status = "disabled";
+};

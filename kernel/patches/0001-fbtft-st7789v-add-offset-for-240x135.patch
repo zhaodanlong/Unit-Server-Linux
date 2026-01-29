@@ -1,0 +1,88 @@
+From: Unit-Server Project
+Subject: [PATCH] fbtft: fb_st7789v: Add offset support for 240x135 LCD
+
+For 240x135 LCD panels (cut from 240x320), the display requires
+column and row offsets to show correctly. This patch adds a custom
+set_addr_win() function that calculates the correct offsets based
+on the rotation angle.
+
+Offsets for 240x135:
+- rotate=0:   col=52, row=40
+- rotate=90:  col=40, row=53
+- rotate=180: col=53, row=40
+- rotate=270: col=40, row=52
+
+---
+ drivers/staging/fbtft/fb_st7789v.c | 45 ++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+
+diff --git a/drivers/staging/fbtft/fb_st7789v.c b/drivers/staging/fbtft/fb_st7789v.c
+--- a/drivers/staging/fbtft/fb_st7789v.c
++++ b/drivers/staging/fbtft/fb_st7789v.c
+@@ -25,6 +25,9 @@
+ 
+ #define DRVNAME "fb_st7789v"
+ 
++/* 240x135 LCD 偏移量 (屏幕从 240x320 面板裁切) */
++/* 不同旋转角度需要不同的偏移量 */
++
+ #define DEFAULT_GAMMA \
+ 	"70 2C 2E 15 10 09 48 33 53 0B 19 18 20 25\n" \
+ 	"70 2C 2E 15 10 09 48 33 53 0B 19 18 20 25"
+@@ -136,6 +139,47 @@ static int init_display(struct fbtft_par *par)
+ 	return 0;
+ }
+ 
++/**
++ * set_addr_win() - 设置显示窗口地址 (带偏移支持)
++ *
++ * 对于 240x135 的 ST7789VW 屏幕（从 240x320 面板裁切），
++ * 需要根据旋转角度添加偏移才能正确显示。
++ */
++static void set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
++{
++	int col_off, row_off;
++
++	switch (par->info->var.rotate) {
++	case 0:
++		col_off = 52;
++		row_off = 40;
++		break;
++	case 90:
++		col_off = 40;
++		row_off = 53;
++		break;
++	case 180:
++		col_off = 53;
++		row_off = 40;
++		break;
++	case 270:
++	default:
++		col_off = 40;
++		row_off = 52;
++		break;
++	}
++
++	xs += col_off;
++	xe += col_off;
++	ys += row_off;
++	ye += row_off;
++
++	write_reg(par, MIPI_DCS_SET_COLUMN_ADDRESS,
++		  (xs >> 8) & 0xFF, xs & 0xFF, (xe >> 8) & 0xFF, xe & 0xFF);
++	write_reg(par, MIPI_DCS_SET_PAGE_ADDRESS,
++		  (ys >> 8) & 0xFF, ys & 0xFF, (ye >> 8) & 0xFF, ye & 0xFF);
++	write_reg(par, MIPI_DCS_WRITE_MEMORY_START);
++}
++
+ static struct fbtft_display display = {
+ 	.regwidth = 8,
+ 	.width = 240,
+@@ -145,6 +189,7 @@ static struct fbtft_display display = {
+ 	.gamma = DEFAULT_GAMMA,
+ 	.fbtftops = {
+ 		.init_display = init_display,
++		.set_addr_win = set_addr_win,
+ 		.set_var = set_var,
+ 		.set_gamma = set_gamma,
+ 		.blank = blank,

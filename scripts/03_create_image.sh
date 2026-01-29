@@ -16,7 +16,7 @@ OVERLAY_DIR="$PROJECT_DIR/rootfs/overlay"
 
 # 配置
 IMAGE_NAME="unit-server-linux.img"
-IMAGE_SIZE="512M"
+IMAGE_SIZE="2G"
 BOOT_SIZE="64M"
 
 # 颜色输出
@@ -40,7 +40,7 @@ echo -e "\n${YELLOW}[1/8] 检查必要文件...${NC}"
 
 UBOOT_BIN="$BOOTLOADER_DIR/u-boot-sunxi-with-spl.bin"
 KERNEL_IMG="$KERNEL_DIR/zImage"
-DTB_FILE="$KERNEL_DIR/dts/sun8i-h3-unit.dtb"
+DTB_FILE="$KERNEL_DIR/dts/sun8i-h3-unit-server.dtb"
 MODULES_DIR="$KERNEL_DIR/modules/4.14.111"
 BOOT_SCR="$BOOTLOADER_DIR/boot/boot.scr"
 BOOT_CMD="$BOOTLOADER_DIR/boot/boot.cmd"
@@ -63,7 +63,7 @@ echo -e "${GREEN}✓ 文件检查通过${NC}"
 # 创建空镜像
 echo -e "\n${YELLOW}[2/8] 创建 $IMAGE_SIZE 镜像文件...${NC}"
 IMAGE_PATH="$OUTPUT_DIR/$IMAGE_NAME"
-dd if=/dev/zero of="$IMAGE_PATH" bs=1M count=512 status=progress
+dd if=/dev/zero of="$IMAGE_PATH" bs=1M count=2048 status=progress
 
 # 设置 loop 设备
 echo -e "\n${YELLOW}[3/8] 设置 loop 设备...${NC}"
@@ -132,7 +132,7 @@ TIMEOUT 10
 
 LABEL linux
     LINUX /zImage
-    FDT /sun8i-h3-unit.dtb
+    FDT /sun8i-h3-unit-server.dtb
     APPEND console=ttyS0,115200 root=/dev/mmcblk1p2 rootwait rw panic=10 fbcon=map:1
 EOF
 

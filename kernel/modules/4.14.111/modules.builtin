@@ -147,11 +147,9 @@ kernel/drivers/input/input-core.ko
 kernel/drivers/input/input-polldev.ko
 kernel/drivers/input/input-leds.ko
 kernel/drivers/input/mousedev.ko
-kernel/drivers/input/joydev.ko
 kernel/drivers/input/evdev.ko
 kernel/drivers/input/keyboard/gpio_keys.ko
 kernel/drivers/input/keyboard/gpio_keys_polled.ko
-kernel/drivers/input/misc/uinput.ko
 kernel/drivers/input/touchscreen/of_touchscreen.ko
 kernel/drivers/input/touchscreen/ads7846.ko
 kernel/drivers/leds/led-class.ko
@@ -256,6 +254,8 @@ kernel/drivers/spi/spidev.ko
 kernel/drivers/spi/spi-sun4i.ko
 kernel/drivers/spi/spi-sun6i.ko
 kernel/drivers/staging/fbtft/fbtft.ko
+kernel/drivers/staging/fbtft/fb_st7789vw.ko
+kernel/drivers/staging/fbtft/flexfb.ko
 kernel/drivers/thermal/thermal_sys.ko
 kernel/drivers/thermal/sun8i_ths.ko
 kernel/drivers/tty/serdev/serdev.ko
