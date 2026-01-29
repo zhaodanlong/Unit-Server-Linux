@@ -1,7 +1,6 @@
 # /etc/fstab - Unit-Server 文件系统表
 #
-# 注意: 在此硬件上，SD 卡被识别为 mmcblk1 而不是 mmcblk0
-# 这是因为 eMMC/内部存储占用了 mmcblk0
+# 注意: SD 卡被识别为 mmcblk1 (mmcblk0 是内部存储)
 
-/dev/mmcblk1p2  /       ext4    defaults,noatime              0 1
-/dev/mmcblk1p1  /boot   vfat    defaults,nofail,iocharset=utf8  0 2
+/dev/mmcblk1p2  /       ext4    defaults,noatime    0 1
+/dev/mmcblk1p1  /boot   vfat    defaults,nofail     0 2

@@ -6,29 +6,18 @@
 # ============================================
 # 1. 加载 SPI LCD 驱动 (ST7789VW 240x135)
 # ============================================
-# 内核可能已内置 fbtft 驱动（使用错误的 GPIO）
-# 只有当 fb1 不存在时才加载模块版本
+# 内核内置的 fbtft 驱动使用错误的 GPIO (GPIO0/GPIO1)
+# 我们需要加载模块版本并指定正确的 GPIO (GPIO12/GPIO11)
 #
-# 检查 fb1 是否已存在且正常工作
-if [ ! -e /dev/fb1 ] || ! grep -q "fb_st7789vw" /sys/class/graphics/fb1/name 2>/dev/null; then
-    # fb1 不存在或不是 st7789vw，尝试加载模块
-    # 先卸载可能存在的错误配置的驱动
-    rmmod fb_st7789vw 2>/dev/null || true
-    rmmod fbtft_device 2>/dev/null || true
-    
-    # 加载正确配置的驱动
-    # - name=fb_st7789vw: LCD 控制器驱动
-    # - busnum=0: SPI0 总线
-    # - mode=3: SPI 模式 3
-    # - speed=50000000: 50MHz SPI 时钟
-    # - gpios=dc:12,reset:11: GPIO 配置 (PA12, PA11)
-    modprobe fbtft_device custom name=fb_st7789vw busnum=0 mode=3 speed=50000000 gpios=dc:12,reset:11 2>/dev/null || true
-fi
+# 注意: 内置驱动无法卸载，但模块加载会覆盖 SPI 设备
+# 忽略 "Driver already registered" 错误
+
+# 尝试加载正确配置的驱动模块
+modprobe fbtft_device custom name=fb_st7789vw busnum=0 mode=3 speed=50000000 gpios=dc:12,reset:11 2>&1 | grep -v "already registered" || true
 
 # ============================================
 # 2. 加载 WiFi 驱动 (RTL8723BU)
 # ============================================
-# 检查驱动是否已加载
 if ! lsmod | grep -q "8723bu"; then
     insmod /lib/modules/4.14.111/kernel/drivers/net/wireless/realtek/rtl8723bu/8723bu.ko 2>/dev/null || true
 fi
@@ -36,12 +25,18 @@ fi
 # 等待 WiFi 接口出现
 sleep 1
 
-# 启动 WiFi 接口 (接口名可能是 wlan0 或 wlx...)
+# 启动 WiFi 接口
 for iface in /sys/class/net/wl*; do
     if [ -e "$iface" ]; then
         ifname=$(basename "$iface")
         ip link set "$ifname" up 2>/dev/null || true
     fi
 done
+
+# ============================================
+# 3. 设置系统时间 (如果有网络)
+# ============================================
+# 尝试从 NTP 同步时间 (后台运行)
+(sleep 30 && ntpdate -s pool.ntp.org 2>/dev/null || true) &
 
 exit 0

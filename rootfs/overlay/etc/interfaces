@@ -1,0 +1,7 @@
+# /etc/network/interfaces - Unit-Server 网络配置
+# 注意: 此设备没有以太网接口，只有 WiFi
+
+auto lo
+iface lo inet loopback
+
+# WiFi 接口由 wpa_supplicant 管理
