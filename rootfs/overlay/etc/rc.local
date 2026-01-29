@@ -6,21 +6,35 @@
 # ============================================
 # 1. 加载 SPI LCD 驱动 (ST7789VW 240x135)
 # ============================================
-# - name=fb_st7789vw: LCD 控制器驱动
-# - busnum=0: SPI0 总线
-# - mode=3: SPI 模式 3
-# - speed=50000000: 50MHz SPI 时钟
-# - gpios=dc:12,reset:11: GPIO 配置 (PA12, PA11)
-modprobe fbtft_device custom name=fb_st7789vw busnum=0 mode=3 speed=50000000 gpios=dc:12,reset:11
+# 内核可能已内置 fbtft 驱动（使用错误的 GPIO）
+# 只有当 fb1 不存在时才加载模块版本
+#
+# 检查 fb1 是否已存在且正常工作
+if [ ! -e /dev/fb1 ] || ! grep -q "fb_st7789vw" /sys/class/graphics/fb1/name 2>/dev/null; then
+    # fb1 不存在或不是 st7789vw，尝试加载模块
+    # 先卸载可能存在的错误配置的驱动
+    rmmod fb_st7789vw 2>/dev/null || true
+    rmmod fbtft_device 2>/dev/null || true
+    
+    # 加载正确配置的驱动
+    # - name=fb_st7789vw: LCD 控制器驱动
+    # - busnum=0: SPI0 总线
+    # - mode=3: SPI 模式 3
+    # - speed=50000000: 50MHz SPI 时钟
+    # - gpios=dc:12,reset:11: GPIO 配置 (PA12, PA11)
+    modprobe fbtft_device custom name=fb_st7789vw busnum=0 mode=3 speed=50000000 gpios=dc:12,reset:11 2>/dev/null || true
+fi
 
 # ============================================
 # 2. 加载 WiFi 驱动 (RTL8723BU)
 # ============================================
-# 驱动位于非标准路径，使用 insmod 直接加载
-insmod /lib/modules/4.14.111/kernel/drivers/net/wireless/realtek/rtl8723bu/8723bu.ko 2>/dev/null || true
+# 检查驱动是否已加载
+if ! lsmod | grep -q "8723bu"; then
+    insmod /lib/modules/4.14.111/kernel/drivers/net/wireless/realtek/rtl8723bu/8723bu.ko 2>/dev/null || true
+fi
 
 # 等待 WiFi 接口出现
-sleep 2
+sleep 1
 
 # 启动 WiFi 接口 (接口名可能是 wlan0 或 wlx...)
 for iface in /sys/class/net/wl*; do
