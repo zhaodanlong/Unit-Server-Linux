@@ -173,3 +173,21 @@
 &ir {
 	status = "disabled";
 };
+
+/* 禁用不存在的硬件 (避免内核错误) */
+&hdmi {
+	status = "disabled";
+};
+
+&de {
+	status = "disabled";
+};
+
+&emac {
+	status = "disabled";
+};
+
+/* 禁用 thermal (4.14 内核驱动不完整) */
+&ths {
+	status = "disabled";
+};

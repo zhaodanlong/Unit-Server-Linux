@@ -17,14 +17,21 @@
 Unit-Server-Linux/
 ├── kernel/
 │   ├── dts/                    # 设备树源文件
-│   │   └── sun8i-h3-unit-server.dts
+│   │   ├── sun8i-h3-unit-server.dts/.dtb  # 自定义设备树 (LCD/WiFi/GPIO)
+│   │   └── original/           # 原始项目设备树 (备份)
 │   ├── config/                 # 内核配置
-│   │   └── unit-server_defconfig
-│   └── patches/                # 内核补丁
-│       └── 0001-fbtft-st7789v-add-offset-for-240x135.patch
+│   │   ├── unit-server_defconfig          # 自定义配置
+│   │   └── original/           # 原始项目配置 (备份)
+│   ├── patches/                # 内核补丁
+│   │   └── 0001-fbtft-st7789v-add-offset-for-240x135.patch
+│   ├── modules/                # 编译好的内核模块
+│   └── zImage                  # 编译好的内核镜像
 ├── bootloader/
+│   ├── boot/                   # U-Boot 启动文件
+│   │   ├── boot.cmd            # U-Boot 启动脚本源文件
+│   │   └── boot.scr            # 编译后的启动脚本
 │   └── extlinux/
-│       └── extlinux.conf       # 启动配置
+│       └── extlinux.conf       # Extlinux 启动配置
 ├── rootfs/                     # 根文件系统配置
 ├── scripts/                    # 构建脚本
 │   ├── build_kernel.sh         # 内核编译脚本

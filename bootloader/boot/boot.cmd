@@ -12,7 +12,7 @@ setenv fsck.repair yes
 # 文件名配置
 setenv ramdisk rootfs.cpio.gz
 setenv kernel zImage
-setenv dtb sun8i-h3-unit.dtb
+setenv dtb sun8i-h3-unit-server.dtb
 
 # 内存地址配置
 setenv env_addr 0x45000000
@@ -29,18 +29,19 @@ fatload mmc 0 ${dtb_addr} ${dtb}
 # 设置设备树
 fdt addr ${dtb_addr}
 
-# 控制台映射到 SPI LCD (fb1)
-# fb0 = HDMI, fb1 = SPI LCD
-setenv fbcon map:1
+# 控制台映射到 SPI LCD (fb0)
+setenv fbcon map:0
 
 # 内核启动参数
 # - console=ttyS0,115200: 串口控制台
-# - root=/dev/mmcblk1p2: SD 卡在此硬件上为 mmcblk1
+# - console=tty0: LCD 控制台
+# - root=/dev/mmcblk0p2: SD 卡根分区
 # - rootfstype=ext4: 根文件系统类型
 # - rw: 可读写挂载
 # - rootwait: 等待根设备就绪
-# - fbcon=${fbcon}: 控制台映射到 fb1 (SPI LCD)
-setenv bootargs console=ttyS0,115200 earlyprintk root=/dev/mmcblk1p2 rootfstype=ext4 rw rootwait fsck.repair=${fsck.repair} panic=10 fbcon=${fbcon}
+# - panic=10: 内核崩溃后 10 秒重启
+# - fbcon=${fbcon}: 控制台映射到 fb0 (SPI LCD)
+setenv bootargs console=ttyS0,115200 console=tty0 root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait fsck.repair=${fsck.repair} panic=10 fbcon=${fbcon}
 
 # 启动内核
 bootz ${kernel_addr} ${ramdisk_addr}:${ramdisk_size} ${dtb_addr}
